@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>漢字ドリル</title>
+<style>
+  :root {
+    --bg: #f4f2ed;
+    --surface: #ffffff;
+    --primary: #2d6a4f;
+    --primary-light: #52b788;
+    --primary-pale: #d8f3dc;
+    --accent: #e76f51;
+    --accent-pale: #fde8e2;
+    --text: #1b1b1b;
+    --text-mid: #555;
+    --text-light: #888;
+    --border: #e0ddd6;
+    --shadow: 0 2px 12px rgba(0,0,0,0.08);
+    --radius: 16px;
+    --radius-sm: 10px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    height: 100%;
+    font-family: 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    max-width: 480px;
+    margin: 0 auto;
+    overflow: hidden; /* prevent body scroll; each screen scrolls internally */
+  }
+
+  /* ===== SCREENS ===== */
+  .screen {
+    display: none;
+    height: 100vh;
+    height: 100dvh;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .screen.active { display: flex; }
+
+  /* ========== HOME SCREEN ========== */
+  .home-header {
+    background: var(--primary);
+    color: white;
+    padding: 16px 20px 14px;
+    flex-shrink: 0;
+  }
+  .home-header h1 { font-size: 19px; font-weight: 700; letter-spacing: 0.04em; }
+  .home-header p { font-size: 11px; opacity: 0.75; margin-top: 2px; }
+
+  /* ---- Unit section (scrollable) ---- */
+  .home-unit-section {
+    flex-shrink: 0;
+    padding: 14px 16px 10px;
+    background: var(--bg);
+  }
+  .section-row {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 10px;
+  }
+  .section-label {
+    font-size: 11px; font-weight: 700; color: var(--text-light);
+    letter-spacing: 0.1em;
+  }
+  .btn-link {
+    font-size: 12px; color: var(--primary); font-weight: 700;
+    background: none; border: none; cursor: pointer; padding: 2px 0;
+  }
+
+  /* Horizontal chip list */
+  .unit-chips {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 6px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .unit-chips::-webkit-scrollbar { display: none; }
+
+  .unit-chip {
+    flex-shrink: 0;
+    background: var(--surface);
+    border: 2px solid var(--border);
+    border-radius: 40px;
+    padding: 8px 16px;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    min-width: 72px;
+    user-select: none;
+  }
+  .unit-chip.selected {
+    border-color: var(--primary);
+    background: var(--primary-pale);
+  }
+  .unit-chip-name { font-size: 13px; font-weight: 700; color: var(--text); }
+  .unit-chip.selected .unit-chip-name { color: var(--primary); }
+  .unit-chip-bar {
+    width: 40px; height: 3px;
+    background: var(--border); border-radius: 2px; overflow: hidden;
+  }
+  .unit-chip.selected .unit-chip-bar { background: rgba(45,106,79,0.2); }
+  .unit-chip-bar-fill {
+    height: 100%; background: var(--primary-light); border-radius: 2px;
+  }
+  .unit-chip-pct { font-size: 10px; color: var(--text-light); font-weight: 600; }
+  .unit-chip.selected .unit-chip-pct { color: var(--primary); }
+
+  /* ---- Mode + Start (fixed bottom area) ---- */
+  .home-bottom {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0 16px 20px;
+    display: flex; flex-direction: column;
+  }
+
+  .mode-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 8px; margin-top: 14px;
+  }
+  .mode-card {
+    background: var(--surface);
+    border-radius: var(--radius-sm);
+    padding: 13px 10px;
+    cursor: pointer;
+    border: 2px solid var(--border);
+    transition: all 0.15s;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .mode-card:active { transform: scale(0.97); }
+  .mode-card.selected-mode {
+    border-color: var(--primary);
+    background: var(--primary-pale);
+  }
+  .mode-card-icon { font-size: 22px; flex-shrink: 0; }
+  .mode-card-name { font-size: 13px; font-weight: 700; color: var(--text); }
+  .mode-card-desc { font-size: 10px; color: var(--text-light); margin-top: 1px; }
+  .mode-card.selected-mode .mode-card-name { color: var(--primary); }
+
+  .start-btn {
+    background: var(--primary);
+    color: white; border: none;
+    border-radius: var(--radius);
+    padding: 18px;
+    font-size: 17px; font-weight: 700;
+    width: 100%; cursor: pointer;
+    margin-top: 14px;
+    letter-spacing: 0.05em;
+    transition: background 0.15s, transform 0.1s;
+    flex-shrink: 0;
+  }
+  .start-btn:active { transform: scale(0.98); }
+  .start-btn:disabled { background: var(--border); color: var(--text-light); cursor: not-allowed; }
+
+  /* Selected summary */
+  .selected-summary {
+    font-size: 12px; color: var(--text-mid);
+    text-align: center; margin-top: 10px;
+    min-height: 18px;
+  }
+
+  /* ========== QUIZ SCREEN ========== */
+  /* Progress row */
+  .quiz-progress-row {
+    background: var(--primary);
+    padding: 0 20px 12px;
+    flex-shrink: 0;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .quiz-back {
+    background: none; border: none; color: white;
+    font-size: 20px; cursor: pointer; padding: 0; flex-shrink: 0;
+    line-height: 1;
+  }
+  .quiz-progress-wrap { flex: 1; }
+  .quiz-progress {
+    height: 5px; background: rgba(255,255,255,0.3);
+    border-radius: 3px; overflow: hidden;
+  }
+  .quiz-progress-bar {
+    height: 100%; background: white; border-radius: 3px;
+    transition: width 0.4s ease;
+  }
+  .quiz-counter {
+    font-size: 12px; color: rgba(255,255,255,0.85);
+    font-weight: 600; flex-shrink: 0; min-width: 40px; text-align: right;
+  }
+
+  /* Quiz body */
+  .quiz-body {
+    flex: 1; overflow-y: auto;
+    padding: 20px 18px 24px;
+    display: flex; flex-direction: column; gap: 14px;
+  }
+
+  .quiz-unit-label {
+    font-size: 11px; font-weight: 700; color: var(--text-light);
+    letter-spacing: 0.08em;
+  }
+
+  .quiz-card {
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 0 0 24px;
+    box-shadow: var(--shadow);
+    display: flex; flex-direction: column;
+    align-items: center;
+    min-height: 130px;
+    overflow: hidden;
+  }
+  /* ヒント：カード上部 */
+  .quiz-card-hint {
+    width: 100%;
+    padding: 16px 20px;
+    text-align: center;
+    font-size: 17px; font-weight: 700;
+    color: var(--text);
+    letter-spacing: 0.04em;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 24px;
+  }
+  .quiz-card-hint .hint-blank {
+    color: var(--primary);
+    border-bottom: 2px solid var(--primary);
+    padding: 0 2px;
+  }
+  .quiz-question {
+    font-size: 24px; font-weight: 600; line-height: 1.7;
+    text-align: center; letter-spacing: 0.05em;
+    padding: 0 20px;
+  }
+  .quiz-blank {
+    display: inline-block;
+    background: var(--primary-pale);
+    border-bottom: 3px solid var(--primary);
+    border-radius: 4px; padding: 0 4px;
+    color: transparent; min-width: 1.8em;
+    text-align: center;
+  }
+
+  /* Streak dots */
+  .streak-dots {
+    display: flex; gap: 8px; justify-content: center;
+  }
+  .streak-dot {
+    width: 11px; height: 11px; border-radius: 50%;
+    background: var(--border); transition: background 0.2s;
+  }
+  .streak-dot.filled { background: var(--primary-light); }
+
+  /* Answer area */
+  .answer-area {
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 22px 20px;
+    box-shadow: var(--shadow);
+    text-align: center;
+    display: none;
+  }
+  .answer-area.visible { display: block; }
+  .answer-label {
+    font-size: 11px; color: var(--text-light); font-weight: 700;
+    letter-spacing: 0.1em; margin-bottom: 8px;
+  }
+  .answer-text {
+    font-size: 40px; font-weight: 700; color: var(--primary);
+    letter-spacing: 0.12em;
+  }
+
+  /* Buttons */
+  .show-btn {
+    background: var(--primary); color: white; border: none;
+    border-radius: var(--radius); padding: 18px;
+    font-size: 16px; font-weight: 700;
+    width: 100%; cursor: pointer;
+    transition: transform 0.1s;
+  }
+  .show-btn:active { transform: scale(0.98); }
+
+  .judge-row {
+    display: none;
+    grid-template-columns: 1fr 1fr; gap: 12px;
+  }
+  .judge-row.visible { display: grid; }
+
+  .btn-ok {
+    background: var(--primary); color: white; border: none;
+    border-radius: var(--radius); padding: 18px;
+    font-size: 15px; font-weight: 700; cursor: pointer;
+    transition: transform 0.1s;
+  }
+  .btn-ok:active { transform: scale(0.97); }
+
+  .btn-ng {
+    background: var(--accent-pale); color: var(--accent); border: none;
+    border-radius: var(--radius); padding: 18px;
+    font-size: 15px; font-weight: 700; cursor: pointer;
+    transition: transform 0.1s;
+  }
+  .btn-ng:active { transform: scale(0.97); }
+
+  /* ========== RESULT SCREEN ========== */
+  .result-header {
+    background: var(--primary); color: white;
+    padding: 18px 20px 16px; flex-shrink: 0;
+  }
+  .result-header h1 { font-size: 19px; font-weight: 700; }
+
+  .result-body {
+    flex: 1; overflow-y: auto;
+    padding: 24px 18px 32px;
+    display: flex; flex-direction: column; align-items: center;
+  }
+  .result-icon { font-size: 56px; margin-bottom: 10px; }
+  .result-title { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+  .result-subtitle { font-size: 13px; color: var(--text-mid); margin-bottom: 24px; text-align: center; }
+
+  .result-stats {
+    width: 100%; display: grid; grid-template-columns: 1fr 1fr;
+    gap: 10px; margin-bottom: 24px;
+  }
+  .stat-card {
+    background: var(--surface); border-radius: var(--radius-sm);
+    padding: 16px 12px; text-align: center; box-shadow: var(--shadow);
+  }
+  .stat-num { font-size: 30px; font-weight: 700; color: var(--primary); }
+  .stat-label { font-size: 11px; color: var(--text-light); margin-top: 3px; }
+
+  .result-missed { width: 100%; margin-bottom: 24px; }
+  .result-missed-title {
+    font-size: 12px; font-weight: 700; color: var(--text-mid);
+    margin-bottom: 8px; letter-spacing: 0.05em;
+  }
+  .missed-item {
+    background: var(--surface); border-radius: var(--radius-sm);
+    padding: 11px 14px; margin-bottom: 7px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .missed-q { font-size: 13px; color: var(--text-mid); flex: 1; }
+  .missed-a { font-size: 16px; font-weight: 700; color: var(--accent); }
+
+  .result-btns { width: 100%; display: flex; flex-direction: column; gap: 10px; }
+  .btn-primary {
+    background: var(--primary); color: white; border: none;
+    border-radius: var(--radius); padding: 17px;
+    font-size: 16px; font-weight: 700; cursor: pointer;
+    transition: transform 0.1s;
+  }
+  .btn-primary:active { transform: scale(0.98); }
+  .btn-secondary {
+    background: var(--surface); color: var(--primary);
+    border: 2px solid var(--primary);
+    border-radius: var(--radius); padding: 15px;
+    font-size: 15px; font-weight: 700; cursor: pointer;
+    transition: transform 0.1s;
+  }
+  .btn-secondary:active { transform: scale(0.98); }
+
+  .master-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, #f6c90e, #e8a000);
+    color: white; font-size: 10px; font-weight: 700;
+    padding: 2px 7px; border-radius: 20px; letter-spacing: 0.04em;
+  }
+
+  .toast {
+    position: fixed; bottom: 36px; left: 50%; transform: translateX(-50%);
+    background: #1b1b1b; color: white;
+    padding: 11px 22px; border-radius: 40px;
+    font-size: 13px; font-weight: 600;
+    opacity: 0; transition: opacity 0.3s;
+    z-index: 100; white-space: nowrap; pointer-events: none;
+  }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<!-- ========== HOME ========== -->
+<div class="screen active" id="screen-home">
+  <div class="home-header">
+    <h1>📖 漢字ドリル</h1>
+    <p>中学１年　書き練習</p>
+  </div>
+
+  <div class="home-unit-section">
+    <div class="section-row">
+      <span class="section-label">単元を選ぶ</span>
+      <button class="btn-link" onclick="toggleAll()">全選択／解除</button>
+    </div>
+    <div class="unit-chips" id="unit-chips"></div>
+  </div>
+
+  <div class="home-bottom">
+    <div class="section-label" style="margin-top:4px">出題モード</div>
+    <div class="mode-grid">
+      <div class="mode-card selected-mode" id="mode-all" onclick="selectMode('all')">
+        <div class="mode-card-icon">📚</div>
+        <div>
+          <div class="mode-card-name">全問</div>
+          <div class="mode-card-desc">選択した全問題</div>
+        </div>
+      </div>
+      <div class="mode-card" id="mode-random10" onclick="selectMode('random10')">
+        <div class="mode-card-icon">🎲</div>
+        <div>
+          <div class="mode-card-name">10問ランダム</div>
+          <div class="mode-card-desc">ランダムに10問</div>
+        </div>
+      </div>
+      <div class="mode-card" id="mode-weak5" onclick="selectMode('weak5')">
+        <div class="mode-card-icon">💪</div>
+        <div>
+          <div class="mode-card-name">苦手5問</div>
+          <div class="mode-card-desc">正答率が低い順</div>
+        </div>
+      </div>
+      <div class="mode-card" id="mode-srs" onclick="selectMode('srs')">
+        <div class="mode-card-icon">🔄</div>
+        <div>
+          <div class="mode-card-name">今日の復習</div>
+          <div class="mode-card-desc">SRS復習問題</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="selected-summary" id="selected-summary"></div>
+    <button class="start-btn" id="start-btn" onclick="startQuiz()" disabled>単元を選んでください</button>
+  </div>
+</div>
+
+<!-- ========== QUIZ ========== -->
+<div class="screen" id="screen-quiz">
+  <!-- 進捗バー -->
+  <div class="quiz-progress-row">
+    <button class="quiz-back" onclick="goHome()">←</button>
+    <div class="quiz-progress-wrap">
+      <div class="quiz-progress">
+        <div class="quiz-progress-bar" id="quiz-progress-bar" style="width:0%"></div>
+      </div>
+    </div>
+    <div class="quiz-counter" id="quiz-counter">1/10</div>
+  </div>
+
+  <div class="quiz-body">
+    <div class="quiz-unit-label" id="quiz-unit-label"></div>
+
+    <div class="quiz-card">
+      <!-- ヒント：カード内上部 -->
+      <div class="quiz-card-hint" id="quiz-hint-bar-text"></div>
+      <div class="quiz-question" id="quiz-question"></div>
+    </div>
+
+    <div class="streak-dots" id="streak-dots">
+      <div class="streak-dot" id="dot0"></div>
+      <div class="streak-dot" id="dot1"></div>
+      <div class="streak-dot" id="dot2"></div>
+    </div>
+
+    <div class="answer-area" id="answer-area">
+      <div class="answer-label">こたえ</div>
+      <div class="answer-text" id="answer-text"></div>
+    </div>
+
+    <button class="show-btn" id="show-btn" onclick="showAnswer()">答えを見る</button>
+
+    <div class="judge-row" id="judge-row">
+      <button class="btn-ng" onclick="judge(false)">😓 もう一回</button>
+      <button class="btn-ok" onclick="judge(true)">✓ できた！</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== RESULT ========== -->
+<div class="screen" id="screen-result">
+  <div class="result-header"><h1>結果</h1></div>
+  <div class="result-body">
+    <div class="result-icon" id="result-icon">🎉</div>
+    <div class="result-title" id="result-title"></div>
+    <div class="result-subtitle" id="result-subtitle"></div>
+    <div class="result-stats">
+      <div class="stat-card"><div class="stat-num" id="stat-correct">0</div><div class="stat-label">正解</div></div>
+      <div class="stat-card"><div class="stat-num" id="stat-total">0</div><div class="stat-label">出題数</div></div>
+      <div class="stat-card"><div class="stat-num" id="stat-rate">0%</div><div class="stat-label">正答率</div></div>
+      <div class="stat-card"><div class="stat-num" id="stat-master">0</div><div class="stat-label">マスター</div></div>
+    </div>
+    <div class="result-missed" id="result-missed"></div>
+    <div class="result-btns">
+      <button class="btn-primary" id="btn-retry-missed" onclick="retryMissed()">間違えた問題を復習</button>
+      <button class="btn-secondary" onclick="goHome()">単元選択に戻る</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ==================== DATA ====================
+const UNITS = [
+  {
+    id: 1, title: "単元1",
+    questions: [
+      { q: "宝物をさがす。", blank: "さがす", answer: "探す" },
+      { q: "フクザツな仕組み。", blank: "フクザツ", answer: "複雑" },
+      { q: "テキザイテキショという。", blank: "テキザイテキショ", answer: "適材適所" },
+      { q: "コウフンした会場。", blank: "コウフン", answer: "興奮" },
+      { q: "駅のコウナイ。", blank: "コウナイ", answer: "構内" },
+      { q: "地域のトクショク。", blank: "トクショク", answer: "特色" },
+      { q: "シセンが合う。", blank: "シセン", answer: "視線" },
+      { q: "ボタンをとめる。", blank: "とめる", answer: "留める" },
+      { q: "議論がチュウに浮く。", blank: "チュウ", answer: "宙" },
+      { q: "まどを開ける。", blank: "まど", answer: "窓" },
+      { q: "かたホウのくつ。", blank: "かたホウ", answer: "片方" },
+      { q: "すがたを現す。", blank: "すがた", answer: "姿" },
+      { q: "かなづかい。", blank: "かなづかい", answer: "仮名" },
+      { q: "とうとい経験。", blank: "とうとい", answer: "尊い" },
+      { q: "委員長におす。", blank: "おす", answer: "推す" },
+      { q: "実力をためす。", blank: "ためす", answer: "試す" },
+      { q: "あやうく助かった。", blank: "あやうく", answer: "危うく" },
+      { q: "中国語をあやつる。", blank: "あやつる", answer: "操る" },
+      { q: "仲間がつどう。", blank: "つどう", answer: "集う" },
+      { q: "思いをひめる。", blank: "ひめる", answer: "秘める" },
+      { q: "口はわざわいの元。", blank: "わざわい", answer: "禍" },
+      { q: "みぜにを切る。", blank: "みぜに", answer: "身銭" },
+      { q: "はなぞのの散策。", blank: "はなぞの", answer: "花園" },
+      { q: "海のさちを食べる。", blank: "さち", answer: "幸" },
+      { q: "事実にもとづく。", blank: "もとづく", answer: "基づく" },
+      { q: "一歩しりぞく。", blank: "しりぞく", answer: "退く" },
+      { q: "要人のゴエイ。", blank: "ゴエイ", answer: "護衛" },
+    ]
+  },
+  {
+    id: 2, title: "単元2",
+    questions: [
+      { q: "至難のわざ。", blank: "わざ", answer: "業" },
+      { q: "ショウインをさぐる。", blank: "ショウイン", answer: "勝因" },
+      { q: "ベンリなもの。", blank: "ベンリ", answer: "便利" },
+      { q: "あたい千金の発見。", blank: "あたい", answer: "値" },
+      { q: "すみやかな処置。", blank: "すみやか", answer: "速やか" },
+      { q: "資産のホユウ。", blank: "ホユウ", answer: "保有" },
+      { q: "おくら入りの案。", blank: "おくら入り", answer: "お蔵入り" },
+      { q: "さけは百薬の長。", blank: "さけ", answer: "酒" },
+      { q: "職人のわざ。", blank: "わざ", answer: "業" },
+      { q: "ジュギョウが終わる。", blank: "ジュギョウ", answer: "授業" },
+      { q: "むなつき八丁。", blank: "むなつき", answer: "胸" },
+      { q: "理解にくるしむ。", blank: "くるしむ", answer: "苦しむ" },
+      { q: "喜びをおぼえる。", blank: "おぼえる", answer: "覚える" },
+      { q: "イッセイに動く。", blank: "イッセイ", answer: "一斉" },
+      { q: "ラケットをふる。", blank: "ふる", answer: "振る" },
+      { q: "コリツした存在。", blank: "コリツ", answer: "孤立" },
+      { q: "真理のタンキュウ。", blank: "タンキュウ", answer: "探究" },
+      { q: "水質のケンサ。", blank: "ケンサ", answer: "検査" },
+      { q: "ジモクを集める。", blank: "ジモク", answer: "耳目" },
+      { q: "サンビのきわみ。", blank: "サンビ", answer: "酸鼻" },
+      { q: "タイインを目指す。", blank: "タイイン", answer: "退院" },
+      { q: "本のダイメイ。", blank: "ダイメイ", answer: "題名" },
+      { q: "一朝イッセキ。", blank: "イッセキ", answer: "一夕" },
+      { q: "カイセツを務める。", blank: "カイセツ", answer: "解説" },
+      { q: "朝三ボシ。", blank: "ボシ", answer: "暮四" },
+      { q: "用事をすます。", blank: "すます", answer: "済ます" },
+      { q: "オウフクのバス代。", blank: "オウフク", answer: "往復" },
+    ]
+  },
+  {
+    id: 3, title: "単元3",
+    questions: [
+      { q: "話のヨウテン。", blank: "ヨウテン", answer: "要点" },
+      { q: "サイゲンのない話。", blank: "サイゲン", answer: "際限" },
+      { q: "ギモンをもつ。", blank: "ギモン", answer: "疑問" },
+      { q: "ミョウな話を聞く。", blank: "ミョウ", answer: "妙" },
+      { q: "人にひとくせ。", blank: "ひとくせ", answer: "一癖" },
+      { q: "大切なヤクわり。", blank: "ヤクわり", answer: "役割" },
+      { q: "色をヒカクする。", blank: "ヒカク", answer: "比較" },
+      { q: "ハンゼンとしない。", blank: "ハンゼン", answer: "判然" },
+      { q: "カがぬける。", blank: "カ", answer: "力" },
+      { q: "商品のケッカン。", blank: "ケッカン", answer: "欠陥" },
+      { q: "進化のカテイ。", blank: "カテイ", answer: "過程" },
+      { q: "紙の表とうら。", blank: "うら", answer: "裏" },
+      { q: "研究のタイショウ。", blank: "タイショウ", answer: "対象" },
+      { q: "ゴカクの勝負。", blank: "ゴカク", answer: "互角" },
+      { q: "つねに努力する。", blank: "つねに", answer: "常" },
+      { q: "長いいしダン。", blank: "いしダン", answer: "石段" },
+      { q: "もものセック。", blank: "セック", answer: "節句" },
+      { q: "意見のちがい。", blank: "ちがい", answer: "違い" },
+      { q: "人員のハイチ。", blank: "ハイチ", answer: "配置" },
+      { q: "たとえばの話。", blank: "たとえば", answer: "例えば" },
+      { q: "ケイブの目で見る。", blank: "ケイブ", answer: "軽侮" },
+      { q: "失敗をさとる。", blank: "さとる", answer: "悟る" },
+      { q: "ソボクな味。", blank: "ソボク", answer: "素朴" },
+      { q: "雑草をかる。", blank: "かる", answer: "刈る" },
+      { q: "あごで使う。", blank: "あごで", answer: "顎" },
+      { q: "結論をみちびく。", blank: "みちびく", answer: "導く" },
+      { q: "新緑のキセツ。", blank: "キセツ", answer: "季節" },
+    ]
+  },
+  {
+    id: 4, title: "単元4",
+    questions: [
+      { q: "チッソ化合物。", blank: "チッソ", answer: "窒素" },
+      { q: "庭に草がしげる。", blank: "しげる", answer: "茂る" },
+      { q: "ロウゴの生活。", blank: "ロウゴ", answer: "老後" },
+      { q: "ジュウジツした毎日。", blank: "ジュウジツ", answer: "充実" },
+      { q: "人目をぬすむ。", blank: "ぬすむ", answer: "盗む" },
+      { q: "オンネンを晴らす。", blank: "オンネン", answer: "怨念" },
+      { q: "会社はアンタイだ。", blank: "アンタイ", answer: "安泰" },
+      { q: "急なハツネツ。", blank: "ハツネツ", answer: "発熱" },
+      { q: "九分九リンの確率。", blank: "リン", answer: "厘" },
+      { q: "方向オンチな人。", blank: "オンチ", answer: "音痴" },
+      { q: "センプウキの風。", blank: "センプウキ", answer: "扇風機" },
+      { q: "シュウジンの護送。", blank: "シュウジン", answer: "囚人" },
+      { q: "門がしまる。", blank: "しまる", answer: "閉まる" },
+      { q: "イシを目指す。", blank: "イシ", answer: "医師" },
+      { q: "ゲイジュツの秋。", blank: "ゲイジュツ", answer: "芸術" },
+      { q: "日程がのびる。", blank: "のびる", answer: "延びる" },
+      { q: "ジショを引く。", blank: "ジショ", answer: "辞書" },
+      { q: "ルイは友を呼ぶ。", blank: "ルイ", answer: "類" },
+      { q: "形がことなる。", blank: "ことなる", answer: "異なる" },
+      { q: "ハンジュクの卵。", blank: "ハンジュク", answer: "半熟" },
+      { q: "コウキョウの建物。", blank: "コウキョウ", answer: "公共" },
+      { q: "シイ的な判断。", blank: "シイ", answer: "恣意" },
+      { q: "小さなギョコウ。", blank: "ギョコウ", answer: "漁港" },
+      { q: "ワンキョクした道。", blank: "ワンキョク", answer: "湾曲" },
+      { q: "ニンシン三か月。", blank: "ニンシン", answer: "妊娠" },
+      { q: "工場ではたらく。", blank: "はたらく", answer: "働く" },
+      { q: "ハイキンをきたえる。", blank: "ハイキン", answer: "背筋" },
+    ]
+  },
+  {
+    id: 5, title: "単元5",
+    questions: [
+      { q: "スイミンをとる。", blank: "スイミン", answer: "睡眠" },
+      { q: "高いヒョウカ。", blank: "ヒョウカ", answer: "評価" },
+      { q: "シンシツで休む。", blank: "シンシツ", answer: "寝室" },
+      { q: "ヒョウショウ状。", blank: "ヒョウショウ", answer: "表彰" },
+      { q: "ガンケンな肉体。", blank: "ガンケン", answer: "頑健" },
+      { q: "試験のメンジョ。", blank: "メンジョ", answer: "免除" },
+      { q: "エキビョウの流行。", blank: "エキビョウ", answer: "疫病" },
+      { q: "流行がすたれる。", blank: "すたれる", answer: "廃れる" },
+      { q: "権利のホウキ。", blank: "ホウキ", answer: "放棄" },
+      { q: "トクメイの情報。", blank: "トクメイ", answer: "匿名" },
+      { q: "数字のラレツ。", blank: "ラレツ", answer: "羅列" },
+      { q: "ふとんをしく。", blank: "しく", answer: "敷く" },
+      { q: "サイエンの誉れ。", blank: "サイエン", answer: "才媛" },
+      { q: "回答のホリュウ。", blank: "ホリュウ", answer: "保留" },
+      { q: "カシを覚える。", blank: "カシ", answer: "歌詞" },
+      { q: "ルールイハン。", blank: "ルールイハン", answer: "違反" },
+      { q: "深めのヨウキ。", blank: "ヨウキ", answer: "容器" },
+      { q: "セイカクな人数。", blank: "セイカク", answer: "正確" },
+      { q: "カンシンがある。", blank: "カンシン", answer: "関心" },
+      { q: "すべて打ち明ける。", blank: "すべて", answer: "全て" },
+      { q: "問題点のケントウ。", blank: "ケントウ", answer: "検討" },
+      { q: "雨天ジュンエン。", blank: "ジュンエン", answer: "順延" },
+      { q: "ソンケイする人。", blank: "ソンケイ", answer: "尊敬" },
+      { q: "リッコウホする。", blank: "リッコウホ", answer: "立候補" },
+      { q: "客のオウタイ。", blank: "オウタイ", answer: "応対" },
+      { q: "平和をとなえる。", blank: "となえる", answer: "唱える" },
+      { q: "ザイゲンの確保。", blank: "ザイゲン", answer: "財源" },
+    ]
+  },
+  {
+    id: 6, title: "単元6",
+    questions: [
+      { q: "フカクを取る。", blank: "フカク", answer: "不覚" },
+      { q: "十年後のボク。", blank: "ボク", answer: "僕" },
+      { q: "ムガムチュウ。", blank: "ムガムチュウ", answer: "無我夢中" },
+      { q: "ジマンの道具。", blank: "ジマン", answer: "自慢" },
+      { q: "桜のなみき道。", blank: "なみき", answer: "並木" },
+      { q: "大阪のコウガイ。", blank: "コウガイ", answer: "郊外" },
+      { q: "車が通りすぎる。", blank: "通りすぎる", answer: "通り過ぎる" },
+      { q: "海岸にそう。", blank: "そう", answer: "沿う" },
+      { q: "引退をにおわせる。", blank: "においわせる", answer: "匂わせる" },
+      { q: "建物をつくる。", blank: "つくる", answer: "造る" },
+      { q: "シゼンな表情。", blank: "シゼン", answer: "自然" },
+      { q: "つめに火をともす。", blank: "ともす", answer: "点す" },
+      { q: "底をつく。", blank: "つく", answer: "突く" },
+      { q: "かれと話す。", blank: "かれ", answer: "彼" },
+      { q: "かばんをさげる。", blank: "さげる", answer: "提げる" },
+      { q: "魚をすくうあみ。", blank: "あみ", answer: "網" },
+      { q: "ふくろのねずみ。", blank: "ふくろ", answer: "袋" },
+      { q: "山頂からながめる。", blank: "ながめる", answer: "眺める" },
+      { q: "運動会のシュモク。", blank: "シュモク", answer: "種目" },
+      { q: "服がほしい。", blank: "ほしい", answer: "欲しい" },
+      { q: "布を切りさく。", blank: "さく", answer: "裂く" },
+      { q: "たからの持ちぐされ。", blank: "たから", answer: "宝" },
+      { q: "左右にふれる。", blank: "ふれる", answer: "振れる" },
+      { q: "ごみをひろう。", blank: "ひろう", answer: "拾う" },
+      { q: "タイレツを組む。", blank: "タイレツ", answer: "隊列" },
+      { q: "波がよせる。", blank: "よせる", answer: "寄せる" },
+      { q: "課題のケントウ。", blank: "ケントウ", answer: "検討" },
+    ]
+  },
+];
+
+// ==================== STATE ====================
+const STORAGE_KEY = 'kanji_drill_v1';
+let state = { progress: {} };
+
+function loadState() {
+  try { const s = localStorage.getItem(STORAGE_KEY); if (s) state = JSON.parse(s); } catch(e) {}
+}
+function saveState() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(e) {}
+}
+function getKey(uid, qi) { return `${uid}_${qi}`; }
+function getProgress(uid, qi) {
+  return state.progress[getKey(uid, qi)] || { correct:0, wrong:0, streak:0, nextReview:0 };
+}
+function updateProgress(uid, qi, ok) {
+  const key = getKey(uid, qi);
+  const p = getProgress(uid, qi);
+  if (ok) {
+    p.correct = (p.correct||0) + 1;
+    p.streak = (p.streak||0) + 1;
+    const ivs = [1,3,7,14,30];
+    p.nextReview = Date.now() + ivs[Math.min(p.streak-1, ivs.length-1)] * 86400000;
+  } else {
+    p.wrong = (p.wrong||0) + 1;
+    p.streak = 0;
+    p.nextReview = Date.now() + 86400000;
+  }
+  state.progress[key] = p;
+  saveState();
+}
+function isMastered(uid, qi) { return getProgress(uid, qi).streak >= 3; }
+function isDue(uid, qi) { const p = getProgress(uid, qi); return p.nextReview > 0 && p.nextReview <= Date.now(); }
+function accuracy(uid, qi) {
+  const p = getProgress(uid, qi);
+  const t = (p.correct||0) + (p.wrong||0);
+  return t === 0 ? 100 : Math.round(p.correct / t * 100);
+}
+
+// ==================== HOME ====================
+let selectedUnits = new Set();
+let selectedMode = 'all';
+
+function renderHome() {
+  const chips = document.getElementById('unit-chips');
+  chips.innerHTML = '';
+  UNITS.forEach(unit => {
+    const mc = unit.questions.filter((_,i) => isMastered(unit.id, i)).length;
+    const pct = Math.round(mc / unit.questions.length * 100);
+    const sel = selectedUnits.has(unit.id);
+    const chip = document.createElement('div');
+    chip.className = 'unit-chip' + (sel ? ' selected' : '');
+    chip.onclick = () => toggleUnit(unit.id);
+    chip.innerHTML = `
+      <div class="unit-chip-name">${unit.title}</div>
+      <div class="unit-chip-bar"><div class="unit-chip-bar-fill" style="width:${pct}%"></div></div>
+      <div class="unit-chip-pct">${mc === unit.questions.length ? '✓' : pct + '%'}</div>
+    `;
+    chips.appendChild(chip);
+  });
+  updateStartBtn();
+  updateModeCards();
+}
+
+function toggleUnit(id) {
+  selectedUnits.has(id) ? selectedUnits.delete(id) : selectedUnits.add(id);
+  renderHome();
+}
+function toggleAll() {
+  selectedUnits.size === UNITS.length ? selectedUnits.clear() : UNITS.forEach(u => selectedUnits.add(u.id));
+  renderHome();
+}
+function selectMode(mode) {
+  selectedMode = mode;
+  updateModeCards();
+  updateStartBtn();
+}
+function updateModeCards() {
+  ['all','random10','weak5','srs'].forEach(m => {
+    const el = document.getElementById('mode-' + m);
+    el.className = 'mode-card' + (m === selectedMode ? ' selected-mode' : '');
+  });
+}
+function updateStartBtn() {
+  const btn = document.getElementById('start-btn');
+  const sum = document.getElementById('selected-summary');
+  if (selectedUnits.size === 0) {
+    btn.disabled = true;
+    btn.textContent = '単元を選んでください';
+    sum.textContent = '';
+    return;
+  }
+  btn.disabled = false;
+  const modeNames = { all:'全問', random10:'10問ランダム', weak5:'苦手5問', srs:'今日の復習' };
+  btn.textContent = `▶ ${modeNames[selectedMode]}で始める`;
+  const total = [...selectedUnits].reduce((s, uid) => {
+    const u = UNITS.find(u => u.id === uid);
+    return s + (u ? u.questions.length : 0);
+  }, 0);
+  sum.textContent = `${selectedUnits.size}単元・${total}問 選択中`;
+}
+
+// ==================== QUIZ ====================
+let quizQuestions = [], quizIndex = 0, quizResults = [];
+
+function buildQuestions() {
+  let pool = [];
+  selectedUnits.forEach(uid => {
+    const unit = UNITS.find(u => u.id === uid);
+    if (!unit) return;
+    unit.questions.forEach((q, i) => pool.push({ unitId: uid, unitTitle: unit.title, qIdx: i, ...q }));
+  });
+  if (selectedMode === 'all') return pool;
+  if (selectedMode === 'random10') return shuffle(pool).slice(0, Math.min(10, pool.length));
+  if (selectedMode === 'weak5') {
+    const tried = pool.filter(q => (getProgress(q.unitId,q.qIdx).correct||0)+(getProgress(q.unitId,q.qIdx).wrong||0) > 0)
+      .sort((a,b) => accuracy(a.unitId,a.qIdx) - accuracy(b.unitId,b.qIdx)).slice(0,5);
+    const untried = pool.filter(q => (getProgress(q.unitId,q.qIdx).correct||0)+(getProgress(q.unitId,q.qIdx).wrong||0) === 0);
+    return tried.concat(untried).slice(0,5);
+  }
+  if (selectedMode === 'srs') {
+    const due = pool.filter(q => isDue(q.unitId, q.qIdx));
+    return due.length > 0 ? due : pool.filter(q => getProgress(q.unitId,q.qIdx).nextReview === 0).slice(0,10);
+  }
+  return pool;
+}
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length-1; i > 0; i--) { const j = Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
+  return a;
+}
+
+function startQuiz() {
+  quizQuestions = buildQuestions();
+  if (quizQuestions.length === 0) { showToast('出題できる問題がありません'); return; }
+  quizIndex = 0; quizResults = [];
+  showScreen('quiz');
+  renderQuestion();
+}
+
+function renderQuestion() {
+  const q = quizQuestions[quizIndex];
+  const total = quizQuestions.length;
+
+  // ヒント（カード内上部）
+  document.getElementById('quiz-hint-bar-text').innerHTML =
+    `「<span class="hint-blank">${q.blank}</span>」を漢字で書こう`;
+
+  document.getElementById('quiz-counter').textContent = `${quizIndex+1}/${total}`;
+  document.getElementById('quiz-progress-bar').style.width = `${(quizIndex/total)*100}%`;
+  document.getElementById('quiz-unit-label').textContent = q.unitTitle;
+
+  const qText = q.q.replace(q.blank, `<span class="quiz-blank">${q.blank}</span>`);
+  document.getElementById('quiz-question').innerHTML = qText;
+  document.getElementById('answer-text').textContent = q.answer;
+  document.getElementById('answer-area').classList.remove('visible');
+  document.getElementById('show-btn').style.display = 'block';
+  document.getElementById('judge-row').classList.remove('visible');
+
+  const p = getProgress(q.unitId, q.qIdx);
+  for (let i = 0; i < 3; i++)
+    document.getElementById('dot'+i).classList.toggle('filled', i < (p.streak||0));
+}
+
+function showAnswer() {
+  document.getElementById('answer-area').classList.add('visible');
+  document.getElementById('show-btn').style.display = 'none';
+  document.getElementById('judge-row').classList.add('visible');
+}
+
+function judge(ok) {
+  const q = quizQuestions[quizIndex];
+  updateProgress(q.unitId, q.qIdx, ok);
+  quizResults.push({ q, isCorrect: ok });
+  quizIndex++;
+  if (quizIndex >= quizQuestions.length) showResult();
+  else renderQuestion();
+}
+
+// ==================== RESULT ====================
+function showResult() {
+  const total = quizResults.length;
+  const correct = quizResults.filter(r => r.isCorrect).length;
+  const rate = Math.round(correct/total*100);
+  const mastered = quizResults.filter(r => isMastered(r.q.unitId, r.q.qIdx)).length;
+  const missed = quizResults.filter(r => !r.isCorrect);
+
+  document.getElementById('stat-correct').textContent = correct;
+  document.getElementById('stat-total').textContent = total;
+  document.getElementById('stat-rate').textContent = rate + '%';
+  document.getElementById('stat-master').textContent = mastered;
+  document.getElementById('result-icon').textContent = rate >= 80 ? '🎉' : rate >= 50 ? '😊' : '💪';
+  document.getElementById('result-title').textContent = rate >= 80 ? 'すばらしい！' : rate >= 50 ? 'よくできました！' : 'がんばろう！';
+  document.getElementById('result-subtitle').textContent = `${total}問中${correct}問正解（正答率 ${rate}%）`;
+
+  const missedEl = document.getElementById('result-missed');
+  missedEl.innerHTML = missed.length > 0
+    ? `<div class="result-missed-title">⚡ 間違えた問題（${missed.length}問）</div>` +
+      missed.map(r => `<div class="missed-item"><div class="missed-q">${r.q.q}</div><div class="missed-a">${r.q.answer}</div></div>`).join('')
+    : '<div class="result-missed-title">✨ 全問正解！</div>';
+
+  document.getElementById('btn-retry-missed').style.display = missed.length > 0 ? 'block' : 'none';
+  renderHome();
+  showScreen('result');
+}
+
+function retryMissed() {
+  quizQuestions = quizResults.filter(r => !r.isCorrect).map(r => r.q);
+  quizIndex = 0; quizResults = [];
+  showScreen('quiz'); renderQuestion();
+}
+
+// ==================== UTILS ====================
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-'+name).classList.add('active');
+}
+function goHome() { showScreen('home'); renderHome(); }
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+loadState();
+renderHome();
+</script>
+</body>
+</html>
