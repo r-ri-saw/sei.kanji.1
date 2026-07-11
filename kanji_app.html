@@ -1,0 +1,1028 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>中1漢字ドリル</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+:root{
+  --bg:#f8f7f4;
+  --card:#ffffff;
+  --primary:#2563eb;
+  --primary-light:#dbeafe;
+  --success:#16a34a;
+  --success-light:#dcfce7;
+  --danger:#dc2626;
+  --danger-light:#fee2e2;
+  --text:#1e293b;
+  --text-sub:#64748b;
+  --border:#e2e8f0;
+  --radius:16px;
+  --shadow:0 2px 12px rgba(0,0,0,0.08);
+}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Noto Sans JP',sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  min-height:100vh;
+  padding-bottom:40px;
+}
+
+/* ヘッダー */
+.header{
+  background:var(--primary);
+  color:#fff;
+  padding:16px 20px 12px;
+  position:sticky;
+  top:0;
+  z-index:100;
+  box-shadow:0 2px 8px rgba(37,99,235,0.3);
+}
+.header h1{font-size:18px;font-weight:700;letter-spacing:0.05em;}
+.header-sub{font-size:12px;opacity:0.8;margin-top:2px;}
+
+/* 画面 */
+.screen{display:none;padding:16px;}
+.screen.active{display:block;}
+
+/* 単元選択 */
+.section-title{
+  font-size:13px;font-weight:600;color:var(--text-sub);
+  text-transform:uppercase;letter-spacing:0.08em;
+  margin:20px 0 8px;
+}
+.unit-grid{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:8px;
+  margin-bottom:16px;
+}
+.unit-btn{
+  background:var(--card);border:2px solid var(--border);
+  border-radius:12px;padding:10px 4px;
+  text-align:center;cursor:pointer;
+  transition:all 0.15s;
+  position:relative;
+}
+.unit-btn.selected{
+  border-color:var(--primary);background:var(--primary-light);
+}
+.unit-btn-num{font-size:15px;font-weight:700;color:var(--primary);}
+.unit-btn-count{font-size:10px;color:var(--text-sub);margin-top:2px;}
+.unit-btn-rate{
+  font-size:10px;font-weight:600;
+  position:absolute;top:4px;right:6px;
+}
+
+.select-all-row{display:flex;gap:8px;margin-bottom:12px;}
+.btn-sm{
+  flex:1;padding:8px;border:none;border-radius:10px;
+  font-size:13px;font-weight:600;cursor:pointer;
+}
+.btn-sm.outline{
+  background:var(--card);border:1.5px solid var(--border);color:var(--text);
+}
+.btn-sm.primary{background:var(--primary);color:#fff;}
+
+/* モード選択 */
+.mode-list{display:flex;flex-direction:column;gap:8px;margin-bottom:20px;}
+.mode-btn{
+  background:var(--card);border:2px solid var(--border);
+  border-radius:var(--radius);padding:14px 16px;
+  display:flex;align-items:center;gap:12px;
+  cursor:pointer;transition:all 0.15s;
+}
+.mode-btn.selected{border-color:var(--primary);background:var(--primary-light);}
+.mode-icon{font-size:22px;}
+.mode-info{}
+.mode-name{font-size:15px;font-weight:600;}
+.mode-desc{font-size:12px;color:var(--text-sub);margin-top:2px;}
+
+.start-btn{
+  width:100%;padding:16px;background:var(--primary);color:#fff;
+  border:none;border-radius:var(--radius);font-size:17px;font-weight:700;
+  cursor:pointer;margin-top:8px;
+  box-shadow:0 4px 12px rgba(37,99,235,0.3);
+}
+.start-btn:disabled{background:#94a3b8;box-shadow:none;}
+
+/* 学習画面 */
+.progress-bar-wrap{
+  background:var(--border);border-radius:999px;height:6px;margin-bottom:4px;
+}
+.progress-bar-inner{
+  background:var(--primary);height:100%;border-radius:999px;
+  transition:width 0.3s;
+}
+.progress-text{font-size:12px;color:var(--text-sub);text-align:right;margin-bottom:16px;}
+
+.card{
+  background:var(--card);border-radius:var(--radius);
+  box-shadow:var(--shadow);padding:24px 20px;
+  margin-bottom:16px;
+}
+.card-meta{font-size:11px;color:var(--text-sub);margin-bottom:8px;}
+.card-question{
+  font-size:22px;font-weight:700;line-height:1.5;
+  margin-bottom:8px;letter-spacing:0.05em;
+}
+.card-question .blank{
+  color:var(--primary);border-bottom:2px solid var(--primary);
+  padding:0 4px;
+}
+
+.answer-area{
+  margin-top:20px;
+}
+.answer-label{font-size:12px;color:var(--text-sub);margin-bottom:8px;}
+.answer-box{
+  background:#f1f5f9;border-radius:12px;
+  padding:16px;text-align:center;
+  font-size:26px;font-weight:700;letter-spacing:0.1em;
+  color:var(--text);
+  display:none;
+}
+.show-btn{
+  width:100%;padding:14px;background:var(--primary-light);
+  color:var(--primary);border:none;border-radius:12px;
+  font-size:16px;font-weight:600;cursor:pointer;
+}
+
+.judge-row{
+  display:flex;gap:10px;margin-top:12px;
+  display:none;
+}
+.judge-btn{
+  flex:1;padding:14px;border:none;border-radius:12px;
+  font-size:16px;font-weight:700;cursor:pointer;
+}
+.judge-btn.ok{background:var(--success);color:#fff;}
+.judge-btn.ng{background:var(--danger);color:#fff;}
+
+/* マスターバッジ */
+.master-badge{
+  display:inline-block;background:#fbbf24;color:#fff;
+  font-size:10px;font-weight:700;padding:2px 6px;
+  border-radius:999px;margin-left:6px;vertical-align:middle;
+}
+
+/* 結果画面 */
+.result-card{
+  background:var(--card);border-radius:var(--radius);
+  box-shadow:var(--shadow);padding:28px 20px;
+  text-align:center;margin-bottom:16px;
+}
+.result-icon{font-size:48px;margin-bottom:8px;}
+.result-score{font-size:36px;font-weight:800;color:var(--primary);}
+.result-label{font-size:14px;color:var(--text-sub);margin-top:4px;}
+.result-detail{
+  display:flex;justify-content:center;gap:24px;margin-top:16px;
+}
+.result-item{text-align:center;}
+.result-item-num{font-size:22px;font-weight:700;}
+.result-item-label{font-size:11px;color:var(--text-sub);}
+
+.result-list{margin-bottom:16px;}
+.result-row{
+  background:var(--card);border-radius:12px;padding:12px 14px;
+  margin-bottom:6px;display:flex;align-items:center;gap:10px;
+  box-shadow:0 1px 4px rgba(0,0,0,0.05);
+}
+.result-row.correct{border-left:4px solid var(--success);}
+.result-row.wrong{border-left:4px solid var(--danger);}
+.result-row-q{flex:1;font-size:13px;}
+.result-row-a{font-size:14px;font-weight:700;}
+.result-row-mark{font-size:18px;}
+
+.action-row{display:flex;gap:8px;}
+.action-btn{
+  flex:1;padding:14px;border:none;border-radius:var(--radius);
+  font-size:15px;font-weight:700;cursor:pointer;
+}
+.action-btn.primary{background:var(--primary);color:#fff;}
+.action-btn.outline{background:var(--card);border:2px solid var(--border);color:var(--text);}
+
+/* 統計画面 */
+.stats-card{
+  background:var(--card);border-radius:var(--radius);
+  box-shadow:var(--shadow);padding:16px;margin-bottom:8px;
+}
+.stats-row{display:flex;justify-content:space-between;align-items:center;}
+.stats-unit{font-size:14px;font-weight:600;}
+.stats-nums{font-size:12px;color:var(--text-sub);}
+.mini-bar-wrap{background:var(--border);border-radius:999px;height:4px;margin-top:6px;}
+.mini-bar-inner{background:var(--primary);height:100%;border-radius:999px;}
+
+/* ボトムナビ */
+.bottom-nav{
+  position:fixed;bottom:0;left:0;right:0;
+  background:#fff;border-top:1px solid var(--border);
+  display:flex;z-index:200;
+  padding-bottom:env(safe-area-inset-bottom);
+}
+.nav-btn{
+  flex:1;padding:10px 0 8px;border:none;background:none;
+  display:flex;flex-direction:column;align-items:center;gap:2px;
+  cursor:pointer;color:var(--text-sub);font-size:10px;
+}
+.nav-btn.active{color:var(--primary);}
+.nav-icon{font-size:22px;}
+
+.pb-nav{padding-bottom:80px;}
+
+/* SRSバッジ */
+.srs-badge{
+  background:var(--danger);color:#fff;
+  font-size:11px;font-weight:700;padding:2px 8px;
+  border-radius:999px;display:inline-block;margin-left:8px;
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>中１漢字ドリル</h1>
+  <div class="header-sub" id="headerSub">単元を選んで学習しよう</div>
+</div>
+
+<!-- 学習画面 -->
+<div id="screenStudy" class="screen pb-nav">
+  <div class="progress-bar-wrap"><div class="progress-bar-inner" id="progressBar" style="width:0%"></div></div>
+  <div class="progress-text" id="progressText">0 / 0</div>
+
+  <div class="card">
+    <div class="card-meta" id="cardMeta"></div>
+    <div class="card-question" id="cardQuestion"></div>
+    <div class="answer-area">
+      <div class="answer-label">答え</div>
+      <div class="answer-box" id="answerBox"></div>
+      <button class="show-btn" id="showBtn" onclick="showAnswer()">答えを見る</button>
+      <div class="judge-row" id="judgeRow">
+        <button class="judge-btn ng" onclick="judge(false)">もう一回 ✗</button>
+        <button class="judge-btn ok" onclick="judge(true)">できた ✓</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 結果画面 -->
+<div id="screenResult" class="screen pb-nav">
+  <div class="result-card">
+    <div class="result-icon" id="resultIcon">🎉</div>
+    <div class="result-score" id="resultScore"></div>
+    <div class="result-label">正答率</div>
+    <div class="result-detail">
+      <div class="result-item">
+        <div class="result-item-num" id="resultCorrect"></div>
+        <div class="result-item-label">正解</div>
+      </div>
+      <div class="result-item">
+        <div class="result-item-num" id="resultWrong"></div>
+        <div class="result-item-label">不正解</div>
+      </div>
+      <div class="result-item">
+        <div class="result-item-num" id="resultTotal"></div>
+        <div class="result-item-label">合計</div>
+      </div>
+    </div>
+  </div>
+  <div class="result-list" id="resultList"></div>
+  <div class="action-row">
+    <button class="action-btn outline" onclick="retryWrong()">間違いだけ復習</button>
+    <button class="action-btn primary" onclick="goHome()">ホームへ</button>
+  </div>
+</div>
+
+<!-- ホーム画面 -->
+<div id="screenHome" class="screen active pb-nav">
+  <div class="section-title">単元を選ぶ</div>
+  <div class="select-all-row">
+    <button class="btn-sm outline" onclick="selectAll(false)">すべて解除</button>
+    <button class="btn-sm primary" onclick="selectAll(true)">すべて選択</button>
+  </div>
+  <div class="unit-grid" id="unitGrid"></div>
+
+  <div class="section-title">出題モード</div>
+  <div class="mode-list">
+    <div class="mode-btn selected" onclick="selectMode(this,'all')" data-mode="all">
+      <div class="mode-icon">📚</div>
+      <div class="mode-info">
+        <div class="mode-name">全問</div>
+        <div class="mode-desc">選択した単元の問題をすべて出題</div>
+      </div>
+    </div>
+    <div class="mode-btn" onclick="selectMode(this,'random10')" data-mode="random10">
+      <div class="mode-icon">🎲</div>
+      <div class="mode-info">
+        <div class="mode-name">10問ランダム</div>
+        <div class="mode-desc">ランダムに10問を出題</div>
+      </div>
+    </div>
+    <div class="mode-btn" onclick="selectMode(this,'weak5')" data-mode="weak5">
+      <div class="mode-icon">💪</div>
+      <div class="mode-info">
+        <div class="mode-name">苦手5問</div>
+        <div class="mode-desc">正答率の低い問題を優先出題</div>
+      </div>
+    </div>
+    <div class="mode-btn" onclick="selectMode(this,'srs')" data-mode="srs">
+      <div class="mode-icon">🔄</div>
+      <div class="mode-info">
+        <div class="mode-name">今日の復習 <span class="srs-badge" id="srsBadge">0</span></div>
+        <div class="mode-desc">SRS：今日復習すべき問題</div>
+      </div>
+    </div>
+  </div>
+  <button class="start-btn" id="startBtn" onclick="startStudy()">学習スタート</button>
+</div>
+
+<!-- 統計画面 -->
+<div id="screenStats" class="screen pb-nav">
+  <div class="section-title">単元別の進捗</div>
+  <div id="statsContent"></div>
+</div>
+
+<!-- ボトムナビ -->
+<div class="bottom-nav">
+  <button class="nav-btn active" id="navHome" onclick="showScreen('home')">
+    <span class="nav-icon">🏠</span>ホーム
+  </button>
+  <button class="nav-btn" id="navStats" onclick="showScreen('stats')">
+    <span class="nav-icon">📊</span>統計
+  </button>
+</div>
+
+<script>
+// ===== データ =====
+const UNITS = [
+  {id:1,title:"単元1",questions:[
+    {q:"宝物をさがす。",b:"さがす",a:"探す"},
+    {q:"フクザツな仕組み。",b:"フクザツ",a:"複雑"},
+    {q:"テキザイテキショという。",b:"テキザイテキショ",a:"適材適所"},
+    {q:"コウフンした会場。",b:"コウフン",a:"興奮"},
+    {q:"駅のコウナイ。",b:"コウナイ",a:"構内"},
+    {q:"地域のトクショク。",b:"トクショク",a:"特色"},
+    {q:"シセンが合う。",b:"シセン",a:"視線"},
+    {q:"ボタンをとめる。",b:"とめる",a:"留める"},
+    {q:"議論がチュウに浮く。",b:"チュウ",a:"宙"},
+    {q:"まどを開ける。",b:"まど",a:"窓"},
+    {q:"かたホウのくつ。",b:"かたホウ",a:"片方"},
+    {q:"すがたを現す。",b:"すがた",a:"姿"},
+    {q:"かなづかい。",b:"かなづかい",a:"仮名"},
+    {q:"とうとい経験。",b:"とうとい",a:"尊い"},
+    {q:"委員長におす。",b:"おす",a:"推す"},
+    {q:"実力をためす。",b:"ためす",a:"試す"},
+    {q:"あやうく助かった。",b:"あやうく",a:"危うく"},
+    {q:"中国語をあやつる。",b:"あやつる",a:"操る"},
+    {q:"仲間がつどう。",b:"つどう",a:"集う"},
+    {q:"思いをひめる。",b:"ひめる",a:"秘める"},
+    {q:"口はわざわいの元。",b:"わざわい",a:"禍"},
+    {q:"みぜにを切る。",b:"みぜに",a:"身銭"},
+    {q:"はなぞのの散策。",b:"はなぞの",a:"花園"},
+    {q:"海のさちを食べる。",b:"さち",a:"幸"},
+    {q:"事実にもとづく。",b:"もとづく",a:"基づく"},
+    {q:"一歩しりぞく。",b:"しりぞく",a:"退く"},
+    {q:"要人のゴエイ。",b:"ゴエイ",a:"護衛"},
+  ]},
+  {id:2,title:"単元2",questions:[
+    {q:"至難のわざ。",b:"わざ",a:"業"},
+    {q:"ショウインをさぐる。",b:"ショウイン",a:"勝因"},
+    {q:"ベンリなもの。",b:"ベンリ",a:"便利"},
+    {q:"あたい千金の発見。",b:"あたい",a:"値"},
+    {q:"すみやかな処置。",b:"すみやか",a:"速やか"},
+    {q:"資産のホユウ。",b:"ホユウ",a:"保有"},
+    {q:"おくら入りの案。",b:"おくら入り",a:"お蔵入り"},
+    {q:"さけは百薬の長。",b:"さけ",a:"酒"},
+    {q:"職人のわざ。",b:"わざ",a:"技"},
+    {q:"ジュギョウが終わる。",b:"ジュギョウ",a:"授業"},
+    {q:"むなつき八丁。",b:"むなつき",a:"胸"},
+    {q:"理解にくるしむ。",b:"くるしむ",a:"苦しむ"},
+    {q:"喜びをおぼえる。",b:"おぼえる",a:"覚える"},
+    {q:"イッセイに動く。",b:"イッセイ",a:"一斉"},
+    {q:"ラケットをふる。",b:"ふる",a:"振る"},
+    {q:"コリツした存在。",b:"コリツ",a:"孤立"},
+    {q:"真理のタンキュウ。",b:"タンキュウ",a:"探究"},
+    {q:"水質のケンサ。",b:"ケンサ",a:"検査"},
+    {q:"ジモクを集める。",b:"ジモク",a:"耳目"},
+    {q:"サンビのきわみ。",b:"サンビ",a:"酸鼻"},
+    {q:"タイインを目指す。",b:"タイイン",a:"退院"},
+    {q:"本のダイメイ。",b:"ダイメイ",a:"題名"},
+    {q:"一朝イッセキ。",b:"イッセキ",a:"一夕"},
+    {q:"カイセツを務める。",b:"カイセツ",a:"解説"},
+    {q:"朝三ボシ。",b:"ボシ",a:"暮四"},
+    {q:"用事をすます。",b:"すます",a:"済ます"},
+    {q:"オウフクのバス代。",b:"オウフク",a:"往復"},
+  ]},
+  {id:3,title:"単元3",questions:[
+    {q:"話のヨウテン。",b:"ヨウテン",a:"要点"},
+    {q:"サイゲンのない話。",b:"サイゲン",a:"際限"},
+    {q:"ギモンをもつ。",b:"ギモン",a:"疑問"},
+    {q:"ミョウな話を聞く。",b:"ミョウ",a:"妙"},
+    {q:"人にひとくせ。",b:"ひとくせ",a:"一癖"},
+    {q:"大切なヤクわり。",b:"ヤクわり",a:"役割"},
+    {q:"色をヒカクする。",b:"ヒカク",a:"比較"},
+    {q:"ハンゼンとしない。",b:"ハンゼン",a:"判然"},
+    {q:"カがぬける。",b:"カ",a:"力"},
+    {q:"商品のケッカン。",b:"ケッカン",a:"欠陥"},
+    {q:"進化のカテイ。",b:"カテイ",a:"過程"},
+    {q:"紙の表とうら。",b:"うら",a:"裏"},
+    {q:"研究のタイショウ。",b:"タイショウ",a:"対象"},
+    {q:"ゴカクの勝負。",b:"ゴカク",a:"互角"},
+    {q:"つねに努力する。",b:"つねに",a:"常"},
+    {q:"長いいしダン。",b:"いしダン",a:"石段"},
+    {q:"もものセック。",b:"セック",a:"節句"},
+    {q:"意見のちがい。",b:"ちがい",a:"違い"},
+    {q:"人員のハイチ。",b:"ハイチ",a:"配置"},
+    {q:"たとえばの話。",b:"たとえば",a:"例えば"},
+    {q:"ケイブの目で見る。",b:"ケイブ",a:"軽侮"},
+    {q:"失敗をさとる。",b:"さとる",a:"悟る"},
+    {q:"ソボクな味。",b:"ソボク",a:"素朴"},
+    {q:"雑草をかる。",b:"かる",a:"刈る"},
+    {q:"あごで使う。",b:"あご",a:"顎"},
+    {q:"結論をみちびく。",b:"みちびく",a:"導く"},
+    {q:"新緑のキセツ。",b:"キセツ",a:"季節"},
+  ]},
+  {id:4,title:"単元4",questions:[
+    {q:"チッソ化合物。",b:"チッソ",a:"窒素"},
+    {q:"庭に草がしげる。",b:"しげる",a:"茂る"},
+    {q:"ロウゴの生活。",b:"ロウゴ",a:"老後"},
+    {q:"ジュウジツした毎日。",b:"ジュウジツ",a:"充実"},
+    {q:"人目をぬすむ。",b:"ぬすむ",a:"盗む"},
+    {q:"オンネンを晴らす。",b:"オンネン",a:"怨念"},
+    {q:"会社はアンタイだ。",b:"アンタイ",a:"安泰"},
+    {q:"急なハツネツ。",b:"ハツネツ",a:"発熱"},
+    {q:"九分九リンの確率。",b:"リン",a:"厘"},
+    {q:"方向オンチな人。",b:"オンチ",a:"音痴"},
+    {q:"センプウキの風。",b:"センプウキ",a:"扇風機"},
+    {q:"シュウジンの護送。",b:"シュウジン",a:"囚人"},
+    {q:"門がしまる。",b:"しまる",a:"閉まる"},
+    {q:"イシを目指す。",b:"イシ",a:"医師"},
+    {q:"ゲイジュツの秋。",b:"ゲイジュツ",a:"芸術"},
+    {q:"日程がのびる。",b:"のびる",a:"延びる"},
+    {q:"ジショを引く。",b:"ジショ",a:"辞書"},
+    {q:"ルイは友を呼ぶ。",b:"ルイ",a:"類"},
+    {q:"形がことなる。",b:"ことなる",a:"異なる"},
+    {q:"ハンジュクの卵。",b:"ハンジュク",a:"半熟"},
+    {q:"コウキョウの建物。",b:"コウキョウ",a:"公共"},
+    {q:"シイ的な判断。",b:"シイ",a:"恣意"},
+    {q:"小さなギョコウ。",b:"ギョコウ",a:"漁港"},
+    {q:"ワンキョクした道。",b:"ワンキョク",a:"湾曲"},
+    {q:"ニンシン三か月。",b:"ニンシン",a:"妊娠"},
+    {q:"工場ではたらく。",b:"はたらく",a:"働く"},
+    {q:"ハイキンをきたえる。",b:"ハイキン",a:"背筋"},
+  ]},
+  {id:5,title:"単元5",questions:[
+    {q:"スイミンをとる。",b:"スイミン",a:"睡眠"},
+    {q:"高いヒョウカ。",b:"ヒョウカ",a:"評価"},
+    {q:"シンシツで休む。",b:"シンシツ",a:"寝室"},
+    {q:"ヒョウショウ状。",b:"ヒョウショウ",a:"表彰"},
+    {q:"ガンケンな肉体。",b:"ガンケン",a:"頑健"},
+    {q:"試験のメンジョ。",b:"メンジョ",a:"免除"},
+    {q:"エキビョウの流行。",b:"エキビョウ",a:"疫病"},
+    {q:"流行がすたれる。",b:"すたれる",a:"廃れる"},
+    {q:"権利のホウキ。",b:"ホウキ",a:"放棄"},
+    {q:"トクメイの情報。",b:"トクメイ",a:"匿名"},
+    {q:"数字のラレツ。",b:"ラレツ",a:"羅列"},
+    {q:"ふとんをしく。",b:"しく",a:"敷く"},
+    {q:"サイエンの誉れ。",b:"サイエン",a:"才媛"},
+    {q:"回答のホリュウ。",b:"ホリュウ",a:"保留"},
+    {q:"カシを覚える。",b:"カシ",a:"歌詞"},
+    {q:"ルールイハン。",b:"ルールイハン",a:"違反"},
+    {q:"深めのヨウキ。",b:"ヨウキ",a:"容器"},
+    {q:"セイカクな人数。",b:"セイカク",a:"正確"},
+    {q:"カンシンがある。",b:"カンシン",a:"関心"},
+    {q:"すべて打ち明ける。",b:"すべて",a:"全て"},
+    {q:"問題点のケントウ。",b:"ケントウ",a:"検討"},
+    {q:"雨天ジュンエン。",b:"ジュンエン",a:"順延"},
+    {q:"ソンケイする人。",b:"ソンケイ",a:"尊敬"},
+    {q:"リッコウホする。",b:"リッコウホ",a:"立候補"},
+    {q:"客のオウタイ。",b:"オウタイ",a:"応対"},
+    {q:"平和をとなえる。",b:"となえる",a:"唱える"},
+    {q:"ザイゲンの確保。",b:"ザイゲン",a:"財源"},
+  ]},
+  {id:6,title:"単元6",questions:[
+    {q:"フカクを取る。",b:"フカク",a:"不覚"},
+    {q:"十年後のボク。",b:"ボク",a:"僕"},
+    {q:"ムガムチュウ。",b:"ムガムチュウ",a:"無我夢中"},
+    {q:"ジマンの道具。",b:"ジマン",a:"自慢"},
+    {q:"桜のなみき道。",b:"なみき",a:"並木"},
+    {q:"大阪のコウガイ。",b:"コウガイ",a:"郊外"},
+    {q:"車が通りすぎる。",b:"すぎる",a:"過ぎる"},
+    {q:"海岸にそう。",b:"そう",a:"沿う"},
+    {q:"引退をにおわせる。",b:"におわせる",a:"匂わせる"},
+    {q:"建物をつくる。",b:"つくる",a:"造る"},
+    {q:"シゼンな表情。",b:"シゼン",a:"自然"},
+    {q:"つめに火をともす。",b:"ともす",a:"点す"},
+    {q:"底をつく。",b:"つく",a:"突く"},
+    {q:"かれと話す。",b:"かれ",a:"彼"},
+    {q:"かばんをさげる。",b:"さげる",a:"提げる"},
+    {q:"魚をすくうあみ。",b:"あみ",a:"網"},
+    {q:"ふくろのねずみ。",b:"ふくろ",a:"袋"},
+    {q:"山頂からながめる。",b:"ながめる",a:"眺める"},
+    {q:"運動会のシュモク。",b:"シュモク",a:"種目"},
+    {q:"服がほしい。",b:"ほしい",a:"欲しい"},
+    {q:"布を切りさく。",b:"さく",a:"裂く"},
+    {q:"たからの持ちぐされ。",b:"たから",a:"宝"},
+    {q:"左右にふれる。",b:"ふれる",a:"振れる"},
+    {q:"ごみをひろう。",b:"ひろう",a:"拾う"},
+    {q:"タイレツを組む。",b:"タイレツ",a:"隊列"},
+    {q:"波がよせる。",b:"よせる",a:"寄せる"},
+    {q:"課題のケントウ。",b:"ケントウ",a:"検討"},
+  ]},
+  {id:7,title:"単元7",questions:[
+    {q:"チギョの放流。",b:"チギョ",a:"稚魚"},
+    {q:"いなかで暮らす。",b:"いなか",a:"田舎"},
+    {q:"鉄製のなべ。",b:"なべ",a:"鍋"},
+    {q:"意見のコウカン。",b:"コウカン",a:"交換"},
+    {q:"学校のゲンカン。",b:"ゲンカン",a:"玄関"},
+    {q:"朝のアイサツ。",b:"アイサツ",a:"挨拶"},
+    {q:"固いケッソク。",b:"ケッソク",a:"結束"},
+    {q:"しばらくだまる。",b:"だまる",a:"黙る"},
+    {q:"うば車をおす。",b:"うば車",a:"乳母車"},
+    {q:"おしが強い。",b:"おし",a:"押し"},
+    {q:"罪をはじる。",b:"はじる",a:"恥じる"},
+    {q:"こしが重い。",b:"こし",a:"腰"},
+    {q:"ひざを打つ。",b:"ひざ",a:"膝"},
+    {q:"荷物をのせる。",b:"のせる",a:"載せる"},
+    {q:"おそろしい事件。",b:"おそろしい",a:"恐ろしい"},
+    {q:"くつのセンモン店。",b:"センモン",a:"専門"},
+    {q:"悲運になく。",b:"なく",a:"泣く"},
+    {q:"木がたたおれる。",b:"たたおれる",a:"倒れる"},
+    {q:"キュウカをとる。",b:"キュウカ",a:"休暇"},
+    {q:"通行のキンシ。",b:"キンシ",a:"禁止"},
+    {q:"大声でしかる。",b:"しかる",a:"叱る"},
+    {q:"雑誌のヘンシュウ。",b:"ヘンシュウ",a:"編集"},
+    {q:"再三のケイコク。",b:"ケイコク",a:"警告"},
+    {q:"作業のシキ。",b:"シキ",a:"指揮"},
+    {q:"手中におさめる。",b:"おさめる",a:"収める"},
+    {q:"栄養をおぎなう。",b:"おぎなう",a:"補う"},
+    {q:"兄はきんべんだ。",b:"きんべん",a:"勤勉"},
+  ]},
+  {id:8,title:"単元8",questions:[
+    {q:"身におぼえがない。",b:"おぼえ",a:"覚え"},
+    {q:"腹をわる。",b:"わる",a:"割る"},
+    {q:"役目をはたす。",b:"はたす",a:"果たす"},
+    {q:"政治のサッシン。",b:"サッシン",a:"刷新"},
+    {q:"敵をケイシする。",b:"ケイシ",a:"軽視"},
+    {q:"キジュンを決める。",b:"キジュン",a:"基準"},
+    {q:"アンチュウモサク。",b:"アンチュウモサク",a:"暗中模索"},
+    {q:"部屋をさがす。",b:"さがす",a:"探す"},
+    {q:"むずかしい話。",b:"むずかしい",a:"難しい"},
+    {q:"仕事になれる。",b:"なれる",a:"慣れる"},
+    {q:"ヨウニンしがたい。",b:"ヨウニン",a:"容認"},
+    {q:"コクサイ交流の場。",b:"コクサイ",a:"国際"},
+    {q:"ジヨウをとる。",b:"ジヨウ",a:"滋養"},
+    {q:"いかりをおさえる。",b:"おさえる",a:"抑える"},
+    {q:"容疑者のタイ捕。",b:"タイ捕",a:"逮"},
+    {q:"リョウボの警護。",b:"リョウボ",a:"陵墓"},
+    {q:"油断もすきもない。",b:"すき",a:"隙"},
+    {q:"山へかりに行く。",b:"かり",a:"狩り"},
+    {q:"鼻のいいリョウケン。",b:"リョウケン",a:"猟犬"},
+    {q:"寺にもうでる。",b:"もうでる",a:"詣でる"},
+    {q:"カチクの世話。",b:"カチク",a:"家畜"},
+    {q:"祖父のユイゴン。",b:"ユイゴン",a:"遺言"},
+    {q:"がけの上に立つ。",b:"がけ",a:"崖"},
+    {q:"かめは万年。",b:"かめ",a:"亀"},
+    {q:"ランオウを混ぜる。",b:"ランオウ",a:"卵黄"},
+    {q:"友情をはぐくむ。",b:"はぐくむ",a:"育む"},
+    {q:"人がおうらいする。",b:"おうらい",a:"往来"},
+  ]},
+  {id:9,title:"単元9",questions:[
+    {q:"果物がうれる。",b:"うれる",a:"熟れる"},
+    {q:"ナットクがいく。",b:"ナットク",a:"納得"},
+    {q:"すこやかに育つ。",b:"すこやか",a:"健やか"},
+    {q:"ロウカを歩く。",b:"ロウカ",a:"廊下"},
+    {q:"庭をソウジする。",b:"ソウジ",a:"掃除"},
+    {q:"イッシュウキ法要。",b:"イッシュウキ",a:"一周忌"},
+    {q:"キンゴウへの転居。",b:"キンゴウ",a:"近郷"},
+    {q:"口がひ上がる。",b:"ひ上がる",a:"干上がる"},
+    {q:"きれいなカビン。",b:"カビン",a:"花瓶"},
+    {q:"タクゼツした技能。",b:"タクゼツ",a:"卓絶"},
+    {q:"ケイヒン地区。",b:"ケイヒン",a:"京浜"},
+    {q:"心のカットウ。",b:"カットウ",a:"葛藤"},
+    {q:"イトを問う。",b:"イト",a:"意図"},
+    {q:"案にソウイする。",b:"ソウイ",a:"相違"},
+    {q:"ソツギョウ式の日。",b:"ソツギョウ",a:"卒業"},
+    {q:"悲願のユウショウ。",b:"ユウショウ",a:"優勝"},
+    {q:"動物のアイゴ。",b:"アイゴ",a:"愛護"},
+    {q:"豊富なチシキ。",b:"チシキ",a:"知識"},
+    {q:"キゲンを設ける。",b:"キゲン",a:"期限"},
+    {q:"陸上キョウギ。",b:"キョウギ",a:"競技"},
+    {q:"ソウタイイテキな見方。",b:"ソウタイイテキ",a:"相対的"},
+    {q:"飛行機のソウジュウ。",b:"ソウジュウ",a:"操縦"},
+    {q:"リンジの会議。",b:"リンジ",a:"臨時"},
+    {q:"まが悪い。",b:"ま",a:"間"},
+    {q:"ヒハンを受ける。",b:"ヒハン",a:"批判"},
+    {q:"駅のまわり。",b:"まわり",a:"周り"},
+    {q:"ごみをひろう。",b:"ひろう",a:"拾う"},
+  ]},
+  {id:10,title:"単元10",questions:[
+    {q:"失業者のキュウサイ。",b:"キュウサイ",a:"救済"},
+    {q:"セキムを負う。",b:"セキム",a:"責務"},
+    {q:"ロンをまたない。",b:"ロン",a:"論"},
+    {q:"空前のキボ。",b:"キボ",a:"規模"},
+    {q:"中国語のツウヤク。",b:"ツウヤク",a:"通訳"},
+    {q:"セイコウウドク。",b:"セイコウウドク",a:"晴耕雨読"},
+    {q:"土台をさえる。",b:"さえる",a:"支える"},
+    {q:"えど時代。",b:"えど",a:"江戸"},
+    {q:"マが差す。",b:"マ",a:"魔"},
+    {q:"各地のレキホウ。",b:"レキホウ",a:"歴訪"},
+    {q:"川のリュウイキ。",b:"リュウイキ",a:"流域"},
+    {q:"どろまみれになる。",b:"どろ",a:"泥"},
+    {q:"カチが高い。",b:"カチ",a:"価値"},
+    {q:"情報のテイキョウ。",b:"テイキョウ",a:"提供"},
+    {q:"おおつぶの雨。",b:"おおつぶ",a:"大粒"},
+    {q:"自転車がこわれる。",b:"こわれる",a:"壊れる"},
+    {q:"キンゾクバット。",b:"キンゾク",a:"金属"},
+    {q:"明確なシュチョウ。",b:"シュチョウ",a:"主張"},
+    {q:"豊かなシゲン。",b:"シゲン",a:"資源"},
+    {q:"昔のエイゾウ。",b:"エイゾウ",a:"映像"},
+    {q:"研究者のハイシュツ。",b:"ハイシュツ",a:"排出"},
+    {q:"時間をついやす。",b:"ついやす",a:"費やす"},
+    {q:"たなに上げる。",b:"たな",a:"棚"},
+    {q:"危険がともなう。",b:"ともなう",a:"伴う"},
+    {q:"マンゼンと過ごす。",b:"マンゼン",a:"漫然"},
+    {q:"むずかしい課題。",b:"むずかしい",a:"難しい"},
+    {q:"人口エイセイの観測。",b:"エイセイ",a:"衛星"},
+  ]},
+  {id:11,title:"単元11",questions:[
+    {q:"ウチュウの神秘。",b:"ウチュウ",a:"宇宙"},
+    {q:"なぞをかける。",b:"なぞ",a:"謎"},
+    {q:"問題をとく。",b:"とく",a:"解く"},
+    {q:"ショミンの生活。",b:"ショミン",a:"庶民"},
+    {q:"ルールのセイヤク。",b:"セイヤク",a:"制約"},
+    {q:"とらの子の洋服。",b:"とらの子",a:"虎の子"},
+    {q:"公平性のカクホ。",b:"カクホ",a:"確保"},
+    {q:"打てばひびく。",b:"ひびく",a:"響く"},
+    {q:"フダンの暮らし。",b:"フダン",a:"普段"},
+    {q:"雨にヘイコウする。",b:"ヘイコウ",a:"閉口"},
+    {q:"麦のほが出る。",b:"ほ",a:"穂"},
+    {q:"毎日のロウドウ。",b:"ロウドウ",a:"労働"},
+    {q:"議論のオウシュウ。",b:"オウシュウ",a:"応酬"},
+    {q:"やまと地方。",b:"やまと",a:"大和"},
+    {q:"同意をえる。",b:"える",a:"得る"},
+    {q:"名前をさけぶ。",b:"さけぶ",a:"叫ぶ"},
+    {q:"動物のセイタイ。",b:"セイタイ",a:"生態"},
+    {q:"友人があわてる。",b:"あわてる",a:"慌てる"},
+    {q:"それはキンクだ。",b:"キンク",a:"禁句"},
+    {q:"シャクゼンとしない。",b:"シャクゼン",a:"釈然"},
+    {q:"ジョウシキがある。",b:"ジョウシキ",a:"常識"},
+    {q:"さつき晴れ。",b:"さつき",a:"五月晴れ"},
+    {q:"たちのく。",b:"たちのく",a:"立ち退く"},
+    {q:"あさい海。",b:"あさい",a:"浅い"},
+    {q:"リエキが出る。",b:"リエキ",a:"利益"},
+    {q:"とびらを開ける。",b:"とびら",a:"扉"},
+    {q:"手をにぎる。",b:"にぎる",a:"握る"},
+  ]},
+  {id:12,title:"単元12",questions:[
+    {q:"兄のタンジョウ日。",b:"タンジョウ",a:"誕生"},
+    {q:"かぐやひめの物語。",b:"かぐやひめ",a:"姫"},
+    {q:"てごろな値段。",b:"てごろ",a:"手頃"},
+    {q:"姉のケッコン。",b:"ケッコン",a:"結婚"},
+    {q:"キゾクの暮らし。",b:"キゾク",a:"貴族"},
+    {q:"たつまきが起こる。",b:"たつまき",a:"竜巻"},
+    {q:"だれかが呼んだ。",b:"だれ",a:"誰"},
+    {q:"ヒョウバンがいい。",b:"ヒョウバン",a:"評判"},
+    {q:"転入生をむかえる。",b:"むかえる",a:"迎える"},
+    {q:"ほぞをかためる。",b:"かためる",a:"固める"},
+    {q:"罪をおかす。",b:"おかす",a:"犯す"},
+    {q:"ころもがえをする。",b:"ころもがえ",a:"衣"},
+    {q:"ラクタンを味わう。",b:"ラクタン",a:"落胆"},
+    {q:"危ない橋をわたる。",b:"わたる",a:"渡る"},
+    {q:"非難のほこさき。",b:"ほこさき",a:"矛先"},
+    {q:"広いシユウ地。",b:"シユウ",a:"私有"},
+    {q:"たてに取る。",b:"たて",a:"盾"},
+    {q:"するどい目つき。",b:"するどい",a:"鋭い"},
+    {q:"大きなほらあな。",b:"ほらあな",a:"穴"},
+    {q:"文章のマツビ。",b:"マツビ",a:"末尾"},
+    {q:"激しいヒロウ。",b:"ヒロウ",a:"疲労"},
+    {q:"二人のむすこ。",b:"むすこ",a:"息子"},
+    {q:"かれ木に花。",b:"かれ木",a:"枯れ木"},
+    {q:"意向にしたがう。",b:"したがう",a:"従う"},
+    {q:"土をもる。",b:"もる",a:"盛る"},
+    {q:"なえぎを植える。",b:"なえぎ",a:"苗木"},
+    {q:"シュクシャクを示す。",b:"シュクシャク",a:"縮尺"},
+  ]},
+];
+
+// ===== ストレージ =====
+const STORAGE_KEY = 'kanji_v1';
+let store = {};
+function loadStore(){
+  try{ store = JSON.parse(localStorage.getItem(STORAGE_KEY)||'{}'); }
+  catch(e){ store = {}; }
+}
+function saveStore(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
+}
+function getQKey(uid, qi){ return `${uid}_${qi}`; }
+function getRecord(uid, qi){
+  const k = getQKey(uid,qi);
+  if(!store[k]) store[k]={correct:0,wrong:0,streak:0,nextReview:0,mastered:false};
+  return store[k];
+}
+
+// ===== SRS =====
+const SRS_INTERVALS = [1,3,7,14,30]; // days
+function updateSRS(uid, qi, correct){
+  const r = getRecord(uid,qi);
+  if(correct){
+    r.correct++;
+    r.streak = (r.streak||0)+1;
+    if(r.streak>=3) r.mastered=true;
+    const lvl = Math.min(r.correct, SRS_INTERVALS.length-1);
+    r.nextReview = Date.now() + SRS_INTERVALS[lvl]*86400000;
+  } else {
+    r.wrong++;
+    r.streak=0;
+    r.mastered=false;
+    r.nextReview = Date.now() + 86400000;
+  }
+  saveStore();
+}
+function getSRSQuestions(){
+  const now = Date.now();
+  const result = [];
+  UNITS.forEach(u=>{
+    u.questions.forEach((q,i)=>{
+      const r = getRecord(u.id,i);
+      if(!r.mastered && r.nextReview>0 && r.nextReview<=now){
+        result.push({uid:u.id,qi:i,q,unitTitle:u.title});
+      }
+    });
+  });
+  return result;
+}
+
+// ===== 状態 =====
+let selectedUnits = new Set();
+let currentMode = 'all';
+let queue = [];
+let currentIdx = 0;
+let sessionResults = [];
+let answerShown = false;
+
+loadStore();
+
+// ===== 初期化 =====
+function init(){
+  renderUnitGrid();
+  updateSRSBadge();
+  updateStartBtn();
+}
+
+function renderUnitGrid(){
+  const grid = document.getElementById('unitGrid');
+  grid.innerHTML = '';
+  UNITS.forEach(u=>{
+    const total = u.questions.length;
+    let correct=0, mastered=0;
+    u.questions.forEach((_,i)=>{
+      const r=getRecord(u.id,i);
+      if(r.correct>0) correct++;
+      if(r.mastered) mastered++;
+    });
+    const rate = total>0 ? Math.round(correct/total*100) : 0;
+    const sel = selectedUnits.has(u.id);
+    const color = rate>=80?'#16a34a':rate>=50?'#d97706':'#64748b';
+    const div = document.createElement('div');
+    div.className = 'unit-btn' + (sel?' selected':'');
+    div.innerHTML = `
+      <div class="unit-btn-rate" style="color:${color}">${rate>0?rate+'%':''}</div>
+      <div class="unit-btn-num">${u.title}</div>
+      <div class="unit-btn-count">${total}問${mastered>0?` ⭐${mastered}`:''}</div>
+    `;
+    div.onclick = ()=>toggleUnit(u.id, div);
+    grid.appendChild(div);
+  });
+}
+
+function toggleUnit(id, el){
+  if(selectedUnits.has(id)){
+    selectedUnits.delete(id);
+    el.classList.remove('selected');
+  } else {
+    selectedUnits.add(id);
+    el.classList.add('selected');
+  }
+  updateStartBtn();
+}
+
+function selectAll(v){
+  if(v){ UNITS.forEach(u=>selectedUnits.add(u.id)); }
+  else { selectedUnits.clear(); }
+  renderUnitGrid();
+  updateStartBtn();
+}
+
+function selectMode(el, mode){
+  document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('selected'));
+  el.classList.add('selected');
+  currentMode = mode;
+  updateStartBtn();
+}
+
+function updateStartBtn(){
+  const btn = document.getElementById('startBtn');
+  if(currentMode==='srs'){
+    const cnt = getSRSQuestions().length;
+    btn.disabled = cnt===0;
+    btn.textContent = cnt>0?`復習スタート（${cnt}問）`:'復習する問題がありません';
+  } else {
+    btn.disabled = selectedUnits.size===0;
+    btn.textContent = '学習スタート';
+  }
+}
+
+function updateSRSBadge(){
+  const cnt = getSRSQuestions().length;
+  document.getElementById('srsBadge').textContent = cnt;
+}
+
+// ===== 学習開始 =====
+function startStudy(){
+  queue = [];
+  if(currentMode==='srs'){
+    const srsQ = getSRSQuestions();
+    queue = srsQ.map(item=>({uid:item.uid,qi:item.qi,q:item.q,unitTitle:item.unitTitle}));
+  } else {
+    const pool = [];
+    UNITS.filter(u=>selectedUnits.has(u.id)).forEach(u=>{
+      u.questions.forEach((q,i)=>pool.push({uid:u.id,qi:i,q,unitTitle:u.title}));
+    });
+    if(currentMode==='random10'){
+      shuffle(pool); queue = pool.slice(0,10);
+    } else if(currentMode==='weak5'){
+      pool.sort((a,b)=>{
+        const ra=getRecord(a.uid,a.qi), rb=getRecord(b.uid,b.qi);
+        const sa=ra.correct/(ra.correct+ra.wrong+0.001);
+        const sb=rb.correct/(rb.correct+rb.wrong+0.001);
+        return sa-sb;
+      });
+      queue = pool.slice(0,5);
+    } else {
+      shuffle(pool); queue = pool;
+    }
+  }
+  if(queue.length===0){ alert('問題がありません'); return; }
+  currentIdx=0; sessionResults=[];
+  showScreen('study');
+  renderQuestion();
+}
+
+function shuffle(arr){
+  for(let i=arr.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [arr[i],arr[j]]=[arr[j],arr[i]];
+  }
+}
+
+function renderQuestion(){
+  const item = queue[currentIdx];
+  const {unitTitle, uid, qi} = item;
+  const r = getRecord(uid,qi);
+  const total = queue.length;
+
+  document.getElementById('progressBar').style.width = (currentIdx/total*100)+'%';
+  document.getElementById('progressText').textContent = `${currentIdx+1} / ${total}`;
+  document.getElementById('headerSub').textContent = unitTitle;
+
+  const qObj = item.q;
+  const qText = qObj.q;
+  const blankText = qObj.b;
+  let displayQ = qText;
+  if(blankText && qText.includes(blankText)){
+    displayQ = qText.replace(blankText, `<span class="blank">${blankText}</span>`);
+  }
+
+  const mastBadge = r.mastered ? '<span class="master-badge">⭐マスター</span>' : '';
+  document.getElementById('cardMeta').innerHTML = `${unitTitle}　正解率: ${r.correct+r.wrong>0?Math.round(r.correct/(r.correct+r.wrong)*100)+'%':'未挑戦'}${mastBadge}`;
+  document.getElementById('cardQuestion').innerHTML = displayQ;
+  document.getElementById('answerBox').textContent = qObj.a;
+  document.getElementById('answerBox').style.display='none';
+  document.getElementById('showBtn').style.display='block';
+  document.getElementById('judgeRow').style.display='none';
+  answerShown=false;
+}
+
+function showAnswer(){
+  const item = queue[currentIdx];
+  const ans = item.q.a;
+  document.getElementById('answerBox').textContent = ans;
+  document.getElementById('answerBox').style.display='block';
+  document.getElementById('showBtn').style.display='none';
+  document.getElementById('judgeRow').style.display='flex';
+  answerShown=true;
+}
+
+function judge(correct){
+  const item = queue[currentIdx];
+  const uid = item.uid, qi = item.qi;
+  const ans = item.q.a;
+  const qtext = typeof item.q==='object'?item.q.q:item.q;
+  updateSRS(uid, qi, correct);
+  sessionResults.push({q:qtext, a:ans, correct, unitTitle:item.unitTitle});
+  currentIdx++;
+  if(currentIdx>=queue.length){
+    showResult();
+  } else {
+    renderQuestion();
+  }
+}
+
+function showResult(){
+  const correct = sessionResults.filter(r=>r.correct).length;
+  const wrong = sessionResults.length - correct;
+  const rate = Math.round(correct/sessionResults.length*100);
+
+  document.getElementById('resultIcon').textContent = rate>=80?'🎉':rate>=50?'💪':'😢';
+  document.getElementById('resultScore').textContent = rate+'%';
+  document.getElementById('resultCorrect').textContent = correct;
+  document.getElementById('resultWrong').textContent = wrong;
+  document.getElementById('resultTotal').textContent = sessionResults.length;
+
+  const list = document.getElementById('resultList');
+  list.innerHTML = '';
+  sessionResults.forEach(r=>{
+    const div = document.createElement('div');
+    div.className = 'result-row '+(r.correct?'correct':'wrong');
+    div.innerHTML = `
+      <div class="result-row-mark">${r.correct?'✓':'✗'}</div>
+      <div class="result-row-q">${r.q}</div>
+      <div class="result-row-a">${r.a}</div>
+    `;
+    list.appendChild(div);
+  });
+
+  showScreen('result');
+  updateSRSBadge();
+  renderUnitGrid();
+}
+
+function retryWrong(){
+  const wrongItems = sessionResults.filter(r=>!r.correct);
+  if(wrongItems.length===0){ alert('間違いはありません！'); return; }
+  // 間違いを再キュー
+  queue = queue.filter(item=>{
+    const qtext = typeof item.q==='object'?item.q.q:item.q;
+    return wrongItems.some(w=>w.q===qtext);
+  });
+  currentIdx=0; sessionResults=[];
+  showScreen('study');
+  renderQuestion();
+}
+
+function goHome(){
+  showScreen('home');
+}
+
+// ===== 統計 =====
+function renderStats(){
+  const cont = document.getElementById('statsContent');
+  cont.innerHTML = '';
+  UNITS.forEach(u=>{
+    let correct=0,wrong=0,mastered=0;
+    u.questions.forEach((_,i)=>{
+      const r=getRecord(u.id,i);
+      correct+=r.correct; wrong+=r.wrong;
+      if(r.mastered) mastered++;
+    });
+    const total=u.questions.length;
+    const rate=correct+wrong>0?Math.round(correct/(correct+wrong)*100):0;
+    const mastRate=Math.round(mastered/total*100);
+    const div=document.createElement('div');
+    div.className='stats-card';
+    div.innerHTML=`
+      <div class="stats-row">
+        <div class="stats-unit">${u.title}</div>
+        <div class="stats-nums">正解${correct} / 挑戦${correct+wrong}　⭐${mastered}/${total}</div>
+      </div>
+      <div class="mini-bar-wrap"><div class="mini-bar-inner" style="width:${mastRate}%"></div></div>
+    `;
+    cont.appendChild(div);
+  });
+}
+
+// ===== 画面切替 =====
+function showScreen(name){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  if(name==='home'){
+    document.getElementById('screenHome').classList.add('active');
+    document.getElementById('navHome').classList.add('active');
+    document.getElementById('headerSub').textContent='単元を選んで学習しよう';
+  } else if(name==='study'){
+    document.getElementById('screenStudy').classList.add('active');
+  } else if(name==='result'){
+    document.getElementById('screenResult').classList.add('active');
+  } else if(name==='stats'){
+    document.getElementById('screenStats').classList.add('active');
+    document.getElementById('navStats').classList.add('active');
+    document.getElementById('headerSub').textContent='学習統計';
+    renderStats();
+  }
+}
+
+init();
+</script>
+</body>
+</html>
